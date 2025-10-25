@@ -4,8 +4,12 @@ scikit-learn
 numpy
 joblib
 # For the API
-fastapi uvicorn[standard]
+fastapi
+uvicorn[standard]
 # For Monitoring
-prometheus_fastapi_instrumentator evidently
+prometheus_fastapi_instrumentator
+evidently
 # For Testing & Linting
-pytest ruff black
+pytest 
+ruff 
+black
