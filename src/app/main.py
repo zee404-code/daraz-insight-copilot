@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from fastapi import FastAPI
 from pydantic import BaseModel
+import numpy as np
 import os
 
 # --- 1. Initialize API and Load Artifacts ---
@@ -112,8 +113,8 @@ def predict(features: ProductFeatures):
     if model is None or not model_columns:
         return {"error": "Model or columns not loaded. Check server logs."}
         
-    prediction = model.predict(input_df_aligned)
+    prediction = np.clip(model.predict(input_df_aligned)[0], 1, 100)
     
     # 5. Return the result
     # model.predict() returns a numpy array, so we take the first item [0]
-    return {"predicted_success_score": float(prediction[0])}
+    return {"predicted_success_score": float(prediction)}

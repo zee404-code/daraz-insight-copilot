@@ -42,7 +42,8 @@ print(f"Data shape after cleaning: {df_clean.shape}")
 
 X_numeric = df_clean[numeric_features].reset_index(drop=True)
 X_categorical = df_clean[categorical_features].reset_index(drop=True)
-y = df_clean[target_column].reset_index(drop=True)
+y_raw = df_clean[target_column].reset_index(drop=True)
+y = 100 * (1 - np.exp(-y_raw / 100))
 
 print("Applying One-Hot Encoding...")
 X_categorical_encoded = pd.get_dummies(X_categorical, drop_first=True)
@@ -71,7 +72,7 @@ print("Model training complete.")
 
 # --- Model Performance Section ---
 print("\n--- Model Performance on Test Set ---")
-y_pred = model.predict(X_test)
+y_pred = np.clip(model.predict(X_test), 1, 100)
 mse = mean_squared_error(y_test, y_pred)
 rmse = np.sqrt(mse)
 mae = mean_absolute_error(y_test, y_pred)
