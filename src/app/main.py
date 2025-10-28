@@ -5,9 +5,13 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import numpy as np
 import os
+from .instrumentation import setup_instrumentation, observe_prediction
 
-# --- 1. Initialize API and Load Artifacts ---
+# Initialize API and Load Artifacts ---
 app = FastAPI(title="Daraz Product Success Predictor")
+
+# Setup instrumentation
+setup_instrumentation(app)
 
 # Load the trained model.
 # This happens once when the app starts.
@@ -28,7 +32,7 @@ except FileNotFoundError:
     print("Error: model_columns.json not found. Run train.py to create it.")
     model_columns = [] # Set to empty list
 
-# --- 2. Define Input Data Shape (Pydantic BaseModel) ---
+# Define Input Data Shape (Pydantic BaseModel) ---
 # This defines what the API expects in a /predict request.
 # It must match the *raw* features you used for training.
 class ProductFeatures(BaseModel):
@@ -63,11 +67,11 @@ class ProductFeatures(BaseModel):
             }
         }
 
-# --- 3. Define Output Data Shape ---
+# Define Output Data Shape ---
 class PredictionOut(BaseModel):
     predicted_success_score: float
 
-# --- 4. Create API Endpoints ---
+# Create API Endpoints ---
 @app.get("/")
 def home():
     return {"message": "API is running. Go to /docs to see the endpoints."}
@@ -81,7 +85,7 @@ def health():
 @app.post("/predict", response_model=PredictionOut)
 def predict(features: ProductFeatures):
     
-    # 1. Convert Pydantic input to a single-row DataFrame
+    # Convert Pydantic input to a single-row DataFrame
     # We must rename columns to match the *original CSV* for pd.get_dummies
     data_dict = features.dict()
     data_dict_renamed = {
@@ -98,23 +102,25 @@ def predict(features: ProductFeatures):
     }
     input_df = pd.DataFrame([data_dict_renamed])
 
-    # 2. Apply One-Hot Encoding
+    # Apply One-Hot Encoding
     # This will only create columns for the categories in *this single request*
     input_df_encoded = pd.get_dummies(input_df, drop_first=True)
 
-    # 3. Align Columns with the Training Data
+    # Align Columns with the Training Data
     # This is the most important MLOps trick:
     # - It adds all the missing one-hot columns (and fills them with 0)
     # - It drops any new, unseen category columns from this request
     input_df_aligned = input_df_encoded.reindex(columns=model_columns, fill_value=0)
 
-    # 4. Make the prediction
+    # Make the prediction
     # Ensure model and columns were loaded
     if model is None or not model_columns:
         return {"error": "Model or columns not loaded. Check server logs."}
         
     prediction = np.clip(model.predict(input_df_aligned)[0], 1, 100)
+    # --- Add monitoring ---
+    observe_prediction()
     
-    # 5. Return the result
+    # Return the result
     # model.predict() returns a numpy array, so we take the first item [0]
     return {"predicted_success_score": float(prediction)}
