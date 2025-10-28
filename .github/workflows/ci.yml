@@ -1,0 +1,97 @@
+# This is the name of your workflow
+name: MLOps Milestone 1 CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+# Set global permissions for the workflow
+permissions:
+  contents: read      # To checkout the code
+  packages: write     # To push Docker images to GHCR
+  security-events: write # To upload security scan results
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest # Run on a standard Linux server
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install linting libraries
+        run: pip install ruff black
+
+      - name: Run Ruff (Linter)
+        run: ruff check src tests
+
+      - name: Run Black (Formatter Check)
+        run: black --check src tests
+
+  test:
+    needs: lint # This job will only run if 'lint' succeeds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Pytest
+        # (D4.b): We will add coverage later if needed
+        run: pytest tests/
+
+  security-scan:
+    needs: test # This job will only run if 'test' succeeds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pip-audit
+
+      - name: Run pip-audit
+        run: pip-audit --fail-on CRITICAL
+
+  build-and-push:
+    needs: security-scan # This job runs last
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true # IMPORTANT: Tell git-lfs to download your model file
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}    # This is your GitHub username
+          password: ${{ secrets.GITHUB_TOKEN }} # A temporary password
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Use the root folder as the build context
+          file: ./Dockerfile
+          push: true # Push the image to the registry
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
