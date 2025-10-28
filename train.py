@@ -11,13 +11,17 @@ print("--- Script Starting (v3.2: Saving Columns) ---")
 
 # --- 1. Define File Paths ---
 DATA_PATH = "data/raw/Top_Selling_Product_Data.csv"
+PROCESSED_DATA_DIR = "data/processed"
+TRAIN_SET_PATH = os.path.join(PROCESSED_DATA_DIR, "train_set.csv")
+TEST_SET_PATH = os.path.join(PROCESSED_DATA_DIR, "test_set.csv")
 MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "model.joblib")
-MODEL_COLS_PATH = os.path.join(MODEL_DIR, "model_columns.json")  # <-- New file path
+MODEL_COLS_PATH = os.path.join(MODEL_DIR, "model_columns.json")
 
 # --- 2. Create 'models' Directory ---
 os.makedirs(MODEL_DIR, exist_ok=True)
-print(f"Directory '{MODEL_DIR}' is ready.")
+os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
+print(f"Directories '{MODEL_DIR}' and '{PROCESSED_DATA_DIR}' are ready.")
 
 # --- 3. Load the Data ---
 try:
@@ -102,5 +106,15 @@ with open(MODEL_COLS_PATH, "w") as f:
     json.dump(model_columns, f)
 print(f"*** Success! Model columns saved to {MODEL_COLS_PATH} ***")
 # -------------------------
+
+print("Saving train and test sets...")
+# We save the *full* DataFrame (X + y)
+train_df = pd.concat([X_train, y_train], axis=1)
+test_df = pd.concat([X_test, y_test], axis=1)
+
+train_df.to_csv(TRAIN_SET_PATH, index=False)
+test_df.to_csv(TEST_SET_PATH, index=False)
+print(f"*** Success! Train/Test sets saved to {PROCESSED_DATA_DIR} ***")
+# ---------------------------------------------------
 
 print("--- Script Finished ---")
