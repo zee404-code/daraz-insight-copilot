@@ -75,7 +75,7 @@ jobs:
           pip install -e .
 
       - name: Run pip-audit
-        run: pip-audit --fail CRITICAL
+        run: pip-audit
 
   build-and-push:
     needs: security-scan # This job runs last
