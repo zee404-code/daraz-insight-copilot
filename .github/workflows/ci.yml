@@ -50,7 +50,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install .
+          pip install -e .
 
 
       - name: Run Pytest
@@ -72,7 +72,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt pip-audit
-          pip install .
+          pip install -e .
 
       - name: Run pip-audit
         run: pip-audit --fail-on CRITICAL
