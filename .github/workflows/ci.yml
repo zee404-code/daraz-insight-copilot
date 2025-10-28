@@ -69,6 +69,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Upgrade base packages
+        run: pip install --upgrade pip setuptools
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt pip-audit
