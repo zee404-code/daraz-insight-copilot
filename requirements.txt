@@ -10,6 +10,6 @@ uvicorn[standard]
 prometheus_fastapi_instrumentator
 evidently
 # For Testing & Linting
-pytest 
-ruff 
+pytest
+ruff
 black

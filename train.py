@@ -5,7 +5,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import numpy as np
 import joblib
 import os
-import json  
+import json
 
 print("--- Script Starting (v3.2: Saving Columns) ---")
 
@@ -13,7 +13,7 @@ print("--- Script Starting (v3.2: Saving Columns) ---")
 DATA_PATH = "data/raw/Top_Selling_Product_Data.csv"
 MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "model.joblib")
-MODEL_COLS_PATH = os.path.join(MODEL_DIR, "model_columns.json") # <-- New file path
+MODEL_COLS_PATH = os.path.join(MODEL_DIR, "model_columns.json")  # <-- New file path
 
 # --- 2. Create 'models' Directory ---
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -29,12 +29,16 @@ except FileNotFoundError:
 
 # --- 4. Prepare Data for Modeling (Feature Engineering) ---
 numeric_features = [
-    'Original Price', 'Discount Price', 'Number of Ratings',
-    'Positive Seller Ratings', 'Ship On Time', 'Chat Response Rate',
-    'No. of products to be sold'
+    "Original Price",
+    "Discount Price",
+    "Number of Ratings",
+    "Positive Seller Ratings",
+    "Ship On Time",
+    "Chat Response Rate",
+    "No. of products to be sold",
 ]
-categorical_features = ['Category', 'Delivery Type', 'Flagship Store']
-target_column = 'Sell percentage to increase'
+categorical_features = ["Category", "Delivery Type", "Flagship Store"]
+target_column = "Sell percentage to increase"
 
 all_features = numeric_features + categorical_features
 df_clean = df.dropna(subset=all_features + [target_column])
@@ -52,7 +56,9 @@ X = pd.concat([X_numeric, X_categorical_encoded], axis=1)
 print(f"Final features shape (X): {X.shape}")
 
 # --- 5. Train the Model ---
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
 print("Initializing tuned model...")
 model = RandomForestRegressor(
@@ -63,7 +69,7 @@ model = RandomForestRegressor(
     min_samples_leaf=1,
     max_features=0.55,
     random_state=42,
-    n_jobs=-1
+    n_jobs=-1,
 )
 
 print("Training model...")
@@ -92,7 +98,7 @@ print(f"*** Success! Model saved to {MODEL_PATH} ***")
 # --- 2. ADD THESE LINES ---
 print("Saving model columns...")
 model_columns = list(X.columns)
-with open(MODEL_COLS_PATH, 'w') as f:
+with open(MODEL_COLS_PATH, "w") as f:
     json.dump(model_columns, f)
 print(f"*** Success! Model columns saved to {MODEL_COLS_PATH} ***")
 # -------------------------

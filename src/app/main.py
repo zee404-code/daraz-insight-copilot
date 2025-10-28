@@ -89,7 +89,6 @@ def health():
 # Prediction endpoint
 @app.post("/predict", response_model=PredictionOut)
 def predict(features: ProductFeatures):
-
     # Convert Pydantic input to a single-row DataFrame
     # We must rename columns to match the *original CSV* for pd.get_dummies
     data_dict = features.dict()
