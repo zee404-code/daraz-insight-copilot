@@ -1,14 +1,14 @@
-from prometheus_fastapi_instrumentator import Instrumentator, metrics
+from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter
-import time
 
 # --- Custom Metrics ---
 # We will create a custom metric to count the number of predictions made
 PREDICTIONS_COUNTER = Counter(
     "api_predictions_total",
     "Total number of predictions made",
-    labelnames=("model_version",) # You can add labels like model version
+    labelnames=("model_version",),  # You can add labels like model version
 )
+
 
 # --- Standard Instrumentation ---
 def setup_instrumentation(app):
@@ -18,7 +18,7 @@ def setup_instrumentation(app):
     """
     print("Setting up Prometheus instrumentation...")
     instrumentator = Instrumentator(
-        excluded_handlers=["/metrics"], # Don't monitor the metrics endpoint itself
+        excluded_handlers=["/metrics"],  # Don't monitor the metrics endpoint itself
     )
 
     # Add the standard instrumentation to the app
