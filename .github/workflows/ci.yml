@@ -138,7 +138,7 @@ jobs:
       - name: Run Acceptance Tests
         run: |
           # Move into the repo root where tests/ exists
-          cd ${{ github.workspace }}/daraz-insight-copilot
+          cd ${{ github.workspace }}
           echo "Current directory: $(pwd)"
           echo "Listing files in tests/"
           ls -l tests
