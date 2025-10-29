@@ -39,7 +39,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        # We don't need LFS anymore, our model is small
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -98,7 +97,7 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  canary-deploy:
+  canary-deploy-and-acceptance-test:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
@@ -118,7 +117,7 @@ jobs:
             -e CANARY=true \
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-      # Wait briefly then show logs
+      # 🪵 Wait briefly then show logs
       - name: Debug - Show container logs
         run: |
           echo "Waiting a few seconds for app startup..."
@@ -135,23 +134,11 @@ jobs:
           timeout 30s bash -c 'until curl -sf http://localhost:8001/health; do sleep 1; done'
           echo "Canary is healthy!"
 
-  acceptance-test:
-    needs: canary-deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install requests
-        run: pip install requests
-
+      # Run acceptance tests directly while container is still running
       - name: Run Acceptance Tests
         run: |
           python - <<EOF
-          import json
-          import requests
-          import sys
-
+          import json, requests, sys
           print("Running acceptance tests against http://localhost:8001")
 
           try:
@@ -161,25 +148,23 @@ jobs:
               print("::error::Golden queries file not found at tests/golden_queries.json")
               sys.exit(1)
 
-          # Test 1: Check the /health endpoint
-          health_response = requests.get("http://localhost:8001/health")
-          assert health_response.status_code == 200, f"Health check failed with status {health_response.status_code}"
-          health_data = health_response.json()
-          assert health_data.get("canary") == "true", f"Canary flag not set to true!"
-          print(" Health check passed, canary flag is 'true'.")
+          # Test 1: Health endpoint
+          health = requests.get('http://localhost:8001/health')
+          assert health.status_code == 200, f"Health check failed: {health.status_code}"
+          data = health.json()
+          assert data.get('canary') == 'true', "Canary flag not true"
+          print(" Health check passed ")
 
-          # Test 2: Check /predict endpoint with golden queries
-          for i, query in enumerate(queries):
+          # Test 2: Prediction endpoint
+          for i, q in enumerate(queries):
               print(f"Testing golden query {i+1}...")
-              response = requests.post("http://localhost:8001/predict", json=query)
-
-              if response.status_code != 200:
-                  print(f"::error::Golden query {i+1} failed with status {response.status_code}!")
+              r = requests.post('http://localhost:8001/predict', json=q)
+              if r.status_code != 200:
+                  print(f"::error::Golden query {i+1} failed with status {r.status_code}")
                   sys.exit(1)
+              resp = r.json()
+              assert 'predicted_success_score' in resp, 'Missing prediction key'
+              print(f" Golden query {i+1} passed ")
 
-              data = response.json()
-              assert "predicted_success_score" in data, "Prediction key not in response"
-              print(f" Golden query {i+1} passed.")
-
-          print(" All acceptance tests passed!")
+          print(" All acceptance tests passed! ")
           EOF
