@@ -7,6 +7,7 @@ import numpy as np
 import os
 from .instrumentation import setup_instrumentation, observe_prediction
 
+
 # Initialize API and Load Artifacts ---
 app = FastAPI(title="Daraz Product Success Predictor")
 

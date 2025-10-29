@@ -1,0 +1,26 @@
+[
+  {
+    "Original_Price": 1650,
+    "Discount_Price": 725,
+    "Number_of_Ratings": 31,
+    "Positive_Seller_Ratings": 86,
+    "Ship_On_Time": 0,
+    "Chat_Response_Rate": 93,
+    "No_of_products_to_be_sold": 113.79,
+    "Category": "Watches, Bags, Jewellery",
+    "Delivery_Type": "Free Delivery",
+    "Flagship_Store": "No"
+  },
+  {
+    "Original_Price": 550,
+    "Discount_Price": 255,
+    "Number_of_Ratings": 342,
+    "Positive_Seller_Ratings": 85,
+    "Ship_On_Time": 0,
+    "Chat_Response_Rate": 98,
+    "No_of_products_to_be_sold": 107.84,
+    "Category": "Kids Bags",
+    "Delivery_Type": "Standard Delivery",
+    "Flagship_Store": "No"
+  }
+]

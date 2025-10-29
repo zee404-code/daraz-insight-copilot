@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest # Run on a standard Linux server
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,11 +34,12 @@ jobs:
         run: black --check src tests
 
   test:
-    needs: lint # This job will only run if 'lint' succeeds
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        # We don't need LFS anymore, our model is small
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,17 +47,19 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -e .
+        # --- MODIFIED ---
+        # We just install requirements.txt. We don't need 'pip install .'
+        # because the 'lifespan' event fixed our import error.
+        run: pip install -r requirements.txt
 
-
-      - name: Run Pytest
-        # (D4.b): We will add coverage later if needed
-        run: pytest tests/
+      - name: Run Pytest with Coverage
+        # --- MODIFIED (D4.b) ---
+        # This now checks for coverage of the 'app' package (which is in 'src/app')
+        # and fails if it's under 80%.
+        run: pytest --cov=src/app --cov-fail-under=80 tests/
 
   security-scan:
-    needs: test # This job will only run if 'test' succeeds
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,15 +74,17 @@ jobs:
         run: pip install --upgrade pip setuptools
 
       - name: Install dependencies
+        # --- MODIFIED ---
+        # Just install requirements.txt and pip-audit
         run: |
           pip install -r requirements.txt pip-audit
-          pip install -e .
 
       - name: Run pip-audit
+        # This will fail the build if any vulnerability is found
         run: pip-audit
 
   build-and-push:
-    needs: security-scan # This job runs last
+    needs: security-scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -89,15 +94,98 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}    # This is your GitHub username
-          password: ${{ secrets.GITHUB_TOKEN }} # A temporary password
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: . # Use the root folder as the build context
+          context: .
           file: ./Dockerfile
-          push: true # Push the image to the registry
+          push: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  canary-deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull the image
+        run: docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Run Canary Deployment
+        # This runs the container in detached mode
+        # It maps port 8001 on the runner to port 8000 in the container
+        # It passes the CANARY=true environment variable
+        run: |
+          docker run -d --name canary -p 8001:8000 \
+            -e CANARY=true \
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Wait for Canary to be healthy
+        # This script pings the /health endpoint until it gets a 200 OK
+        # It will try for 30 seconds before failing.
+        run: |
+          echo "Waiting for canary to start..."
+          timeout 30s bash -c 'until curl -sf http://localhost:8001/health; do sleep 1; done'
+          echo "Canary is healthy!"
+
+  acceptance-test:
+    needs: canary-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install requests
+        # We need the 'requests' library we just added
+        run: pip install requests
+
+      - name: Run Acceptance Tests
+        # This is a Python script run directly in the CI step
+        run: |
+          python - <<EOF
+          import json
+          import requests
+          import sys
+
+          print("Running acceptance tests against http://localhost:8001")
+
+          try:
+              # We need to create this file next
+              with open('tests/golden_queries.json', 'r') as f:
+                  queries = json.load(f)
+          except FileNotFoundError:
+              print("::error::Golden queries file not found at tests/golden_queries.json")
+              sys.exit(1)
+
+          # Test 1: Check the /health endpoint
+          health_response = requests.get("http://localhost:8001/health")
+          assert health_response.status_code == 200, f"Health check failed with status {health_response.status_code}"
+          health_data = health_response.json()
+          assert health_data.get("canary") == "true", f"Canary flag not set to true!"
+          print("✅ Health check passed, canary flag is 'true'.")
+
+          # Test 2: Check /predict endpoint with golden queries
+          for i, query in enumerate(queries):
+              print(f"Testing golden query {i+1}...")
+              response = requests.post("http://localhost:8001/predict", json=query)
+
+              if response.status_code != 200:
+                  print(f"::error::Golden query {i+1} failed with status {response.status_code}!")
+                  sys.exit(1)
+
+              data = response.json()
+              assert "predicted_success_score" in data, "Prediction key not in response"
+              print(f"✅ Golden query {i+1} passed.")
+
+          print("🎉 All acceptance tests passed!")
+          EOF
