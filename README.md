@@ -10,14 +10,15 @@
 
 ```mermaid
 graph LR
-    A[Raw Data Ingestion (.csv)] --> B(Data Processing/Training Pipeline);
-    B -- Saves --> C[Model Artifacts (model.joblib, columns.json)];
-    C --> D{Inference API (FastAPI + Docker)};
-    D -- Loads --> C;
-    D -- E[Prediction Endpoint (/predict)];
-    F[Monitoring] --> D;
-    F -- Collects --> G[Metrics (/metrics)];
-    F -- Generates --> H[Data Drift Report];
+    A[Raw Data Ingestion (.csv)] --> B[Data Processing/Training Pipeline]
+    B --> C[Model Artifacts (model.joblib, columns.json)]
+    C --> D[Inference API (FastAPI + Docker)]
+    D --> E[Prediction Endpoint (/predict)]
+    D --> F[Monitoring]
+    F --> G[Metrics (/metrics)]
+    F --> H[Data Drift Report]
+```
+
 
 ## Quick Start
 
@@ -105,11 +106,12 @@ This project uses a `Makefile` for common development tasks:
 **A:** You need to allow script execution for the current user. Run this command in PowerShell (as administrator if needed):
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
 
 Answer 'Y' if prompted.
 
 **Q: Docker build fails?**
-**A: Ensure Docker Desktop is running. Check the error messages in the build log for specific issues (e.g., network errors, problems installing dependencies). Ensure your Dockerfile is in the root directory.**
+**A:** Ensure Docker Desktop is running. Check the error messages in the build log for specific issues (e.g., network errors, problems installing dependencies). Ensure your Dockerfile is in the root directory.
 
 **Q: Pre-commit hook fails?**
-**A: Run pre-commit run --all-files locally. This will show you the errors and automatically fix many of them. Commit the changes made by the hooks.**
+**A:** Run pre-commit run --all-files locally. This will show you the errors and automatically fix many of them. Commit the changes made by the hooks.
