@@ -141,6 +141,9 @@ jobs:
           import json, requests, sys
           print("Running acceptance tests against http://localhost:8001")
 
+          path = os.path.join(os.getcwd(), 'tests', 'golden_queries.json')
+          print(f"Looking for golden queries at: {path}")
+
           try:
               with open(path, 'r') as f:
                 queries = json.load(f)
