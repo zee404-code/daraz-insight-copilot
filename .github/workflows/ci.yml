@@ -8,11 +8,14 @@ on:
 
 # Set global permissions for the workflow
 permissions:
-  contents: read      # To checkout the code
-  packages: write     # To push Docker images to GHCR
+  contents: read        # To checkout the code
+  packages: write       # To push Docker images to GHCR
   security-events: write # To upload security scan results
 
 jobs:
+  # ------------------------
+  # Linting
+  # ------------------------
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +36,9 @@ jobs:
       - name: Run Black (Formatter Check)
         run: black --check src tests
 
+  # ------------------------
+  # Testing
+  # ------------------------
   test:
     needs: lint
     runs-on: ubuntu-latest
@@ -51,6 +57,9 @@ jobs:
       - name: Run Pytest with Coverage
         run: PYTHONPATH=src pytest --cov=src/app --cov-fail-under=80 tests/
 
+  # ------------------------
+  # Security Scan
+  # ------------------------
   security-scan:
     needs: test
     runs-on: ubuntu-latest
@@ -73,6 +82,9 @@ jobs:
       - name: Run pip-audit
         run: pip-audit
 
+  # ------------------------
+  # Build and Push Docker Image
+  # ------------------------
   build-and-push:
     needs: security-scan
     runs-on: ubuntu-latest
@@ -97,10 +109,16 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
+  # ------------------------
+  # Canary Deploy + Acceptance Tests
+  # ------------------------
   canary-deploy-and-acceptance-test:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Log in to GitHub Container Registry (GHCR)
         uses: docker/login-action@v3
         with:
@@ -117,14 +135,12 @@ jobs:
             -e CANARY=true \
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-      # 🪵 Wait briefly then show logs
       - name: Debug - Show container logs
         run: |
           echo "Waiting a few seconds for app startup..."
           sleep 5
           docker logs canary
 
-      # List model directory contents
       - name: Debug - List model directory
         run: docker exec canary ls -lh /app/models
 
@@ -132,12 +148,10 @@ jobs:
         run: |
           echo "Waiting for canary to start..."
           timeout 30s bash -c 'until curl -sf http://localhost:8001/health; do sleep 1; done'
-          echo "Canary is healthy!"
+          echo " Canary is healthy!"
 
-      # Run acceptance tests directly while container is still running
       - name: Run Acceptance Tests
         run: |
-          # Move into the repo root where tests/ exists
           cd ${{ github.workspace }}
           echo "Current directory: $(pwd)"
           echo "Listing files in tests/"
@@ -152,7 +166,7 @@ jobs:
 
           try:
               with open(path, 'r') as f:
-                queries = json.load(f)
+                  queries = json.load(f)
           except FileNotFoundError:
               print(f"::error::Golden queries file not found at {path}")
               sys.exit(1)
@@ -162,7 +176,7 @@ jobs:
           assert health.status_code == 200, f"Health check failed: {health.status_code}"
           data = health.json()
           assert data.get('canary') == 'true', "Canary flag not true"
-          print(" Health check passed ")
+          print(" Health check passed")
 
           # Test 2: Prediction endpoint
           for i, q in enumerate(queries):
@@ -173,7 +187,7 @@ jobs:
                   sys.exit(1)
               resp = r.json()
               assert 'predicted_success_score' in resp, 'Missing prediction key'
-              print(f" Golden query {i+1} passed ")
+              print(f" Golden query {i+1} passed")
 
-          print(" All acceptance tests passed! ")
+          print("All acceptance tests passed!")
           EOF
