@@ -47,15 +47,9 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        # --- MODIFIED ---
-        # We just install requirements.txt. We don't need 'pip install .'
-        # because the 'lifespan' event fixed our import error.
         run: pip install -r requirements.txt
 
       - name: Run Pytest with Coverage
-        # --- MODIFIED (D4.b) ---
-        # This now checks for coverage of the 'app' package (which is in 'src/app')
-        # and fails if it's under 80%.
         run: PYTHONPATH=src pytest --cov=src/app --cov-fail-under=80 tests/
 
   security-scan:
@@ -74,13 +68,10 @@ jobs:
         run: pip install --upgrade pip setuptools
 
       - name: Install dependencies
-        # --- MODIFIED ---
-        # Just install requirements.txt and pip-audit
         run: |
           pip install -r requirements.txt pip-audit
 
       - name: Run pip-audit
-        # This will fail the build if any vulnerability is found
         run: pip-audit
 
   build-and-push:
@@ -122,17 +113,23 @@ jobs:
         run: docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: Run Canary Deployment
-        # This runs the container in detached mode
-        # It maps port 8001 on the runner to port 8000 in the container
-        # It passes the CANARY=true environment variable
         run: |
           docker run -d --name canary -p 8001:8000 \
             -e CANARY=true \
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
+      # Wait briefly then show logs
+      - name: Debug - Show container logs
+        run: |
+          echo "Waiting a few seconds for app startup..."
+          sleep 5
+          docker logs canary
+
+      # List model directory contents
+      - name: Debug - List model directory
+        run: docker exec canary ls -lh /app/models
+
       - name: Wait for Canary to be healthy
-        # This script pings the /health endpoint until it gets a 200 OK
-        # It will try for 30 seconds before failing.
         run: |
           echo "Waiting for canary to start..."
           timeout 30s bash -c 'until curl -sf http://localhost:8001/health; do sleep 1; done'
@@ -146,11 +143,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install requests
-        # We need the 'requests' library we just added
         run: pip install requests
 
       - name: Run Acceptance Tests
-        # This is a Python script run directly in the CI step
         run: |
           python - <<EOF
           import json
@@ -160,7 +155,6 @@ jobs:
           print("Running acceptance tests against http://localhost:8001")
 
           try:
-              # We need to create this file next
               with open('tests/golden_queries.json', 'r') as f:
                   queries = json.load(f)
           except FileNotFoundError:
