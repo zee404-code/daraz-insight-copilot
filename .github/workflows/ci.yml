@@ -137,6 +137,12 @@ jobs:
       # Run acceptance tests directly while container is still running
       - name: Run Acceptance Tests
         run: |
+          # Move into the repo root where tests/ exists
+          cd ${{ github.workspace }}/daraz-insight-copilot
+          echo "Current directory: $(pwd)"
+          echo "Listing files in tests/"
+          ls -l tests
+
           python - <<EOF
           import json, requests, sys, os
           print("Running acceptance tests against http://localhost:8001")
