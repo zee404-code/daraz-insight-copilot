@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  # FastAPI Application
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+
+  # Simple Nginx server to host the HTML report
+  dashboard:
+    image: nginx:alpine # Use a lightweight web server image
+    ports:
+      - "7000:80" # Map localhost:7000 to nginx's default port 80
+    volumes:
+      - ./reports:/usr/share/nginx/html:ro # Mount reports folder to nginx web root (read-only)
