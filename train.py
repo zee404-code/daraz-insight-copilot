@@ -9,7 +9,7 @@ import json
 
 print("--- Script Starting (v3.2: Saving Columns) ---")
 
-# --- 1. Define File Paths ---
+
 DATA_PATH = "data/raw/Top_Selling_Product_Data.csv"
 PROCESSED_DATA_DIR = "data/processed"
 TRAIN_SET_PATH = os.path.join(PROCESSED_DATA_DIR, "train_set.csv")
@@ -18,12 +18,11 @@ MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "model.joblib")
 MODEL_COLS_PATH = os.path.join(MODEL_DIR, "model_columns.json")
 
-# --- 2. Create 'models' Directory ---
+
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DATA_DIR, exist_ok=True)
 print(f"Directories '{MODEL_DIR}' and '{PROCESSED_DATA_DIR}' are ready.")
 
-# --- 3. Load the Data ---
 try:
     df = pd.read_csv(DATA_PATH)
     print(f"Successfully loaded data from {DATA_PATH}")
@@ -31,7 +30,6 @@ except FileNotFoundError:
     print(f"Error: Data file not found at {DATA_PATH}")
     exit()
 
-# --- 4. Prepare Data for Modeling (Feature Engineering) ---
 numeric_features = [
     "Original Price",
     "Discount Price",
@@ -59,28 +57,17 @@ X_categorical_encoded = pd.get_dummies(X_categorical, drop_first=True)
 X = pd.concat([X_numeric, X_categorical_encoded], axis=1)
 print(f"Final features shape (X): {X.shape}")
 
-# --- 5. Train the Model ---
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
 print("Initializing tuned model...")
-model = RandomForestRegressor(
-    criterion="friedman_mse",
-    n_estimators=1800,
-    max_depth=36,
-    min_samples_split=2,
-    min_samples_leaf=1,
-    max_features=0.55,
-    random_state=42,
-    n_jobs=-1,
-)
+model = RandomForestRegressor(n_estimators=10, max_depth=5, random_state=42, n_jobs=-1)
 
 print("Training model...")
 model.fit(X_train, y_train)
 print("Model training complete.")
 
-# --- Model Performance Section ---
 print("\n--- Model Performance on Test Set ---")
 y_pred = np.clip(model.predict(X_test), 1, 100)
 mse = mean_squared_error(y_test, y_pred)
@@ -94,12 +81,10 @@ print(f"Mean Squared Error (MSE):   {mse:.4f}")
 print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
 print("-----------------------------------")
 
-# --- 6. Save Model and Columns ---
 print("Saving model artifact...")
 joblib.dump(model, MODEL_PATH)
 print(f"*** Success! Model saved to {MODEL_PATH} ***")
 
-# --- 2. ADD THESE LINES ---
 print("Saving model columns...")
 model_columns = list(X.columns)
 with open(MODEL_COLS_PATH, "w") as f:
