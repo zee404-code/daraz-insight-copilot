@@ -142,10 +142,10 @@ jobs:
           print("Running acceptance tests against http://localhost:8001")
 
           try:
-              with open('tests/golden_queries.json', 'r') as f:
-                  queries = json.load(f)
+              with open(path, 'r') as f:
+                queries = json.load(f)
           except FileNotFoundError:
-              print("::error::Golden queries file not found at tests/golden_queries.json")
+              print(f"::error::Golden queries file not found at {path}")
               sys.exit(1)
 
           # Test 1: Health endpoint
