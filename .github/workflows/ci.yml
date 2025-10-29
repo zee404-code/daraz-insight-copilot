@@ -56,7 +56,7 @@ jobs:
         # --- MODIFIED (D4.b) ---
         # This now checks for coverage of the 'app' package (which is in 'src/app')
         # and fails if it's under 80%.
-        run: pytest --cov=src/app --cov-fail-under=80 tests/
+        run: PYTHONPATH=src pytest --cov=src/app --cov-fail-under=80 tests/
 
   security-scan:
     needs: test
@@ -172,7 +172,7 @@ jobs:
           assert health_response.status_code == 200, f"Health check failed with status {health_response.status_code}"
           health_data = health_response.json()
           assert health_data.get("canary") == "true", f"Canary flag not set to true!"
-          print("✅ Health check passed, canary flag is 'true'.")
+          print(" Health check passed, canary flag is 'true'.")
 
           # Test 2: Check /predict endpoint with golden queries
           for i, query in enumerate(queries):
@@ -185,7 +185,7 @@ jobs:
 
               data = response.json()
               assert "predicted_success_score" in data, "Prediction key not in response"
-              print(f"✅ Golden query {i+1} passed.")
+              print(f" Golden query {i+1} passed.")
 
-          print("🎉 All acceptance tests passed!")
+          print(" All acceptance tests passed!")
           EOF
