@@ -9,14 +9,14 @@
 ## Architecture
 
 ```mermaid
-graph LR
-    A[Raw Data Ingestion (.csv)] --> B[Data Processing/Training Pipeline]
-    B --> C[Model Artifacts (model.joblib, columns.json)]
-    C --> D[Inference API (FastAPI + Docker)]
-    D --> E[Prediction Endpoint (/predict)]
-    D --> F[Monitoring]
-    F --> G[Metrics (/metrics)]
-    F --> H[Data Drift Report]
+graph LR;
+    A[Raw Data Ingestion (.csv)] --> B[Data Processing/Training Pipeline];
+    B --> C[Model Artifacts (model.joblib, columns.json)];
+    C --> D[Inference API (FastAPI + Docker)];
+    D --> E[Prediction Endpoint (/predict)];
+    D --> F[Monitoring];
+    F --> G[Metrics (/metrics)];
+    F --> H[Data Drift Report];
 ```
 
 
