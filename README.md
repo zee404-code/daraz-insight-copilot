@@ -99,7 +99,7 @@ To view the dashboard, which is served using Docker Compose:
 2. Run `docker-compose up --build` in your terminal.
 3. Open `http://localhost:7000/data_and_target_drift.html` in your browser.
 
-<img src="assets/evidently_dashboard.png" alt="Evidently Dashboard" width="300">
+<img src="assets/evidently_dashboard.png" alt="Evidently Dashboard" width="500">
 
 ### API Metrics (Prometheus & Grafana)
 
@@ -108,9 +108,52 @@ A full Prometheus & Grafana stack is included in the Docker Compose file.
 2. API metrics are collected by Prometheus at `http://localhost:9090`.
 3. Grafana is available at `http://localhost:3000` (login: admin/admin). The Prometheus data source is pre-configured.
 
-<img src="assets/grafana_dashboard.png" alt="Grafan Dashboard" width="300">
+<img src="assets/grafana_dashboard.png" alt="Grafan Dashboard" width="500">
 
 * **GPU Metrics:** This project utilizes CPU for training and inference, so GPU-specific metrics are not applicable.
+
+## Cloud Deployment
+
+This project is deployed and hosted on **Amazon Web Services (AWS)** using three distinct services: **EC2**, **S3**, and **CloudWatch**, fulfilling the D9 requirement.
+
+### How the ML Workflow Interacts with AWS
+
+1.  **Training (Local):** The model is trained locally using `python train.py`. This script also generates the `model.joblib` artifact.
+2.  **Data/Model Storage (S3):** The `Top_Selling_Product_Data.csv` dataset and the final `model.joblib` artifact are manually uploaded to an **S3 bucket** for persistent, durable storage.
+3.  **Inference (EC2):** An **EC2 instance** runs our Docker container. The container (built by the CI/CD pipeline) pulls the code, and when the API starts, it loads the model from its local `models/` directory (which was part of the build).
+4.  **Monitoring (CloudWatch):** **CloudWatch** automatically monitors the EC2 instance (CPU, Network, etc.) to ensure the health of our inference API server.
+
+### Services Used
+
+* **S3 (Simple Storage Service):** Used for persistent data storage.
+    * **Why:** S3 is a highly durable and scalable service perfect for storing project artifacts.
+    * **How:** The `Top_Selling_Product_Data.csv` dataset and the trained `model.joblib` are stored in an S3 bucket.
+    * <img src="assets/S3_bucket.png" alt="S3 Bucket" width="500">
+
+* **EC2 (Elastic Compute Cloud):** Used to host the live inference API.
+    * **Why:** An EC2 `t3.micro` instance provides a free-tier-eligible virtual server to run our Docker container 24/7.
+    * **How:** The API's Docker image (built by our CI/CD pipeline and stored in GHCR) is pulled and run on an Amazon Linux EC2 instance.
+    * <img src="assets/Instance.png" alt="Instance Created" width="500">
+    * <img src="assets/API_running_on_AWS.png" alt="API running on AWS" width="500">
+
+* **CloudWatch:** Used for basic infrastructure monitoring.
+    * **Why:** CloudWatch is automatically integrated with EC2 and provides essential metrics (CPU, Network, Disk) to monitor the health and performance of our API server.
+    * <img src="assets/CloudWatch_Monitoring.png" alt="CloudWatch Monitoring" width="500">
+
+### Reproduction Steps & Security
+
+1.  Launch a `t2.micro` EC2 instance with an Amazon Linux AMI.
+2.  **Configure the Security Group:** To follow security best practices, access is restricted.
+    * Allow inbound TCP traffic on port `22` (SSH) from `My IP`.
+    * Allow inbound TCP traffic on port `8000` (API) from `My IP`.
+3.  Connect to the instance via SSH.
+4.  Install Docker: `sudo yum update -y && sudo yum install docker -y && sudo service docker start && sudo usermod -a -G docker ec2-user`
+5.  Log out and log back in.
+6.  Log in to GHCR: `docker login ghcr.io -u <YOUR-GITHUB-USERNAME>` (use a PAT as the password).
+7.  Pull and run the image: `docker pull ghcr.io/zee404-code/daraz-insight-copilot:latest`
+8.  Run: `docker run -d -p 8000:8000 ghcr.io/zee404-code/daraz-insight-copilot:latest`
+9.  Access the API at `http://<YOUR_EC2_PUBLIC_IP>:8000/docs`.
+
 
 ## Make Targets
 
