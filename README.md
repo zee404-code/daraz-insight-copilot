@@ -128,17 +128,17 @@ This project is deployed and hosted on **Amazon Web Services (AWS)** using three
 * **S3 (Simple Storage Service):** Used for persistent data storage.
     * **Why:** S3 is a highly durable and scalable service perfect for storing project artifacts.
     * **How:** The `Top_Selling_Product_Data.csv` dataset and the trained `model.joblib` are stored in an S3 bucket.
-    * <img src="assets/S3_bucket.png" alt="S3 Bucket" width="500">
+    * <img src="assets/Annonated_S3_bucket.png" alt="S3 Bucket" width="500">
 
 * **EC2 (Elastic Compute Cloud):** Used to host the live inference API.
     * **Why:** An EC2 `t3.micro` instance provides a free-tier-eligible virtual server to run our Docker container 24/7.
     * **How:** The API's Docker image (built by our CI/CD pipeline and stored in GHCR) is pulled and run on an Amazon Linux EC2 instance.
-    * <img src="assets/Instance.png" alt="Instance Created" width="500">
-    * <img src="assets/API_running_on_AWS.png" alt="API running on AWS" width="500">
+    * <img src="assets/Annonated_Instance.png" alt="Instance Created" width="500">
+    * <img src="assets/Annonated_API_running_on_AWS.png" alt="API running on AWS" width="500">
 
 * **CloudWatch:** Used for basic infrastructure monitoring.
     * **Why:** CloudWatch is automatically integrated with EC2 and provides essential metrics (CPU, Network, Disk) to monitor the health and performance of our API server.
-    * <img src="assets/CloudWatch_Monitoring.png" alt="CloudWatch Monitoring" width="500">
+    * <img src="assets/Annonated_CloudWatch_Monitoring.png" alt="CloudWatch Monitoring" width="500">
 
 ### Reproduction Steps & Security
 

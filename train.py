@@ -21,7 +21,7 @@ MODEL_PATH = os.path.join(MODEL_DIR, "model.joblib")  # Still save locally too
 MODEL_COLS_PATH = os.path.join(MODEL_DIR, "model_columns.json")
 REPORT_DIR = "reports"  # For saving metrics plot
 
-# NEW: MLflow Configuration
+# MLflow Configuration
 MLFLOW_TRACKING_URI = "http://localhost:5000"  # Default local MLflow server URI
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment("Daraz Product Success")  # Experiment name
@@ -76,7 +76,7 @@ with mlflow.start_run() as run:
     mlflow.log_param("random_state", 42)
 
     # Define and Log Model Parameters
-    n_estimators = 10  # Using small model params
+    n_estimators = 10
     max_depth = 5
     model_params = {
         "n_estimators": n_estimators,
@@ -105,12 +105,11 @@ with mlflow.start_run() as run:
     print(metrics)
 
     # Log Model with MLflow
-    # This automatically saves the model in MLflow format
     print("Logging model to MLflow...")
     mlflow.sklearn.log_model(
         sk_model=model,
-        artifact_path="sklearn-model",  # Folder name within MLflow run artifacts
-        registered_model_name="daraz-product-success-predictor",  # Model name in registry
+        artifact_path="sklearn-model",
+        registered_model_name="daraz-product-success-predictor",
     )
     print("Model logged and registered.")
 

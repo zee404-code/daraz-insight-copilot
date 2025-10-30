@@ -1,5 +1,5 @@
 repos:
-# --- D6: Required Hooks ---
+# Required Hooks ---
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -9,18 +9,18 @@ repos:
     -   id: check-yaml
     -   id: check-json
 
-# --- D8: Required Secret Detection ---
+# Required Secret Detection ---
 -   repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
     -   id: detect-secrets
 
-# --- D4.a: Linting & Formatting Hooks ---
+# Linting & Formatting Hooks ---
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.5
     hooks:
       - id: ruff
-        args: [--fix] # Automatically fix errors
+        args: [--fix]
       - id: ruff-format
 
 -   repo: https://github.com/psf/black

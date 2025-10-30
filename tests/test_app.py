@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from app.main import app  # Import your FastAPI app
+from app.main import app
 
 # Create a 'client' that can make fake requests to our app
 client = TestClient(app)
@@ -16,8 +16,7 @@ def test_health_check():
     # Check 1: Was the request successful (Status 200)?
     assert response.status_code == 200
 
-    # Check 2: Does the JSON response match what we expect?
-    # We check for CANARY=false, as required by D4.e
+    # We check for CANARY=false
     assert response.json() == {"status": "ok", "canary": "false"}
 
 
@@ -28,7 +27,7 @@ def test_prediction():
     """
     print("Testing /predict endpoint...")
 
-    # This is a valid sample payload (our example from main.py)
+    # valid sample payload
     test_payload = {
         "Original_Price": 1650,
         "Discount_Price": 725,
@@ -45,18 +44,18 @@ def test_prediction():
     # Make the POST request
     response = client.post("/predict", json=test_payload)
 
-    # Check 1: Was the request successful (Status 200)?
+    # Was the request successful (Status 200)?
     assert response.status_code == 200
 
-    # Check 2: Did we get a JSON response?
+    # Did we get a JSON response?
     data = response.json()
     assert "predicted_success_score" in data
 
-    # Check 3: Is the score a number (float)?
+    # Is the score a number (float)?
     score = data["predicted_success_score"]
     assert isinstance(score, float)
 
-    # Check 4: Is the score within our 0-100 clamped range?
+    # Is the score within 0-100 clamped range?
     assert 0.0 <= score <= 100.0
 
 

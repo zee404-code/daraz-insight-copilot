@@ -5,7 +5,7 @@ import os
 
 print("--- Evidently Report Script Starting ---")
 
-# Define File Paths ---
+# Define File Paths
 TRAIN_SET_PATH = "data/processed/train_set.csv"
 TEST_SET_PATH = "data/processed/test_set.csv"
 REPORT_DIR = "reports"
@@ -29,7 +29,6 @@ except FileNotFoundError as e:
 print("Generating Evidently drift report...")
 
 # Initialize the report and add the monitoring "metrics"
-# D5 requires a "data drift" dashboard. We'll also add target drift.
 data_drift_report = Report(
     metrics=[
         DataDriftPreset(),
@@ -39,9 +38,9 @@ data_drift_report = Report(
 
 # Run the report
 data_drift_report.run(
-    current_data=test_df,  # "Current" is our test set
-    reference_data=train_df,  # "Reference" is our training set
-    column_mapping=None,  # Evidently is smart enough to find the target
+    current_data=test_df,
+    reference_data=train_df,
+    column_mapping=None,
 )
 
 # Save the Report
