@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s # Scrape targets every 15 seconds
+
+scrape_configs:
+  - job_name: "fastapi_app"
+    static_configs:
+      # This is the key: 'app:8000' is the Docker network address
+      # for your API service defined in docker-compose.yml
+      - targets: ["app:8000"]

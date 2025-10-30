@@ -1,16 +1,54 @@
 version: '3.8'
 
+networks:
+  monitoring-net:
+    driver: bridge
+
 services:
   # FastAPI Application
   app:
     build: .
     ports:
       - "8000:8000"
-
-  # Simple Nginx server to host the HTML report
-  dashboard:
-    image: nginx:alpine # Use a lightweight web server image
-    ports:
-      - "7000:80" # Map localhost:7000 to nginx's default port 80
     volumes:
-      - ./reports:/usr/share/nginx/html:ro # Mount reports folder to nginx web root (read-only)
+      - ./reports:/app/reports
+    networks:
+      - monitoring-net
+
+  # Nginx Dashboard
+  dashboard:
+    image: nginx:alpine
+    ports:
+      - "7000:80"
+    volumes:
+      - ./reports:/usr/share/nginx/html:ro
+    networks:
+      - monitoring-net
+
+  # Prometheus Service
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - monitoring-net
+
+  # Grafana Service
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning/datasource/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    user: "root"
+    networks:
+      - monitoring-net

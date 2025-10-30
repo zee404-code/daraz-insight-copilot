@@ -79,6 +79,39 @@ Expected Response
     }
     ```
 
+## Monitoring
+
+### MLflow Experiment Tracking
+
+Model training experiments, parameters, metrics, and artifacts are tracked using MLflow. To view the MLflow UI locally:
+1. Activate the virtual environment.
+2. Run `mlflow ui` in your terminal.
+3. Open `http://localhost:5000` in your browser.
+
+The model is registered in the MLflow Model Registry under the name `daraz-product-success-predictor`.
+
+### Data Drift
+
+Data drift between the training and test sets is monitored using Evidently. A pre-generated report is available in the `reports/` folder.
+
+To view the dashboard, which is served using Docker Compose:
+1. Ensure Docker Desktop is running.
+2. Run `docker-compose up --build` in your terminal.
+3. Open `http://localhost:7000/data_and_target_drift.html` in your browser.
+
+<img src="assets/evidently_dashboard.png" alt="Evidently Dashboard" width="300">
+
+### API Metrics (Prometheus & Grafana)
+
+A full Prometheus & Grafana stack is included in the Docker Compose file.
+1. Run `docker-compose up --build`
+2. API metrics are collected by Prometheus at `http://localhost:9090`.
+3. Grafana is available at `http://localhost:3000` (login: admin/admin). The Prometheus data source is pre-configured.
+
+<img src="assets/grafana_dashboard.png" alt="Grafan Dashboard" width="300">
+
+* **GPU Metrics:** This project utilizes CPU for training and inference, so GPU-specific metrics are not applicable.
+
 ## Make Targets
 
 This project uses a `Makefile` for common development tasks:
