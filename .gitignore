@@ -1,5 +1,6 @@
 .venvfz/
-
+.env/
+faiss_index/
 mlruns/
 mlartifacts/
 

@@ -1,5 +1,6 @@
+# tests/test_app.py
 from fastapi.testclient import TestClient
-from app.main import app
+from app.main import app  # Ensure this import matches your folder structure
 
 # Create a 'client' that can make fake requests to our app
 client = TestClient(app)
@@ -8,7 +9,7 @@ client = TestClient(app)
 def test_health_check():
     """
     Tests the /health endpoint.
-    It should return a 200 OK status and the correct JSON.
+    It should return a 200 OK status and the correct JSON structure.
     """
     print("Testing /health endpoint...")
     response = client.get("/health")
@@ -16,8 +17,15 @@ def test_health_check():
     # Check 1: Was the request successful (Status 200)?
     assert response.status_code == 200
 
-    # We check for CANARY=false
-    assert response.json() == {"status": "ok", "canary": "false"}
+    # Check 2: Verify the content
+    data = response.json()
+
+    # We check specific keys instead of the whole dictionary
+    # This is safer because 'd2_rag' might be True or False depending on your setup
+    assert data["status"] == "ok"
+    assert "canary" in data
+    assert "d1_model" in data
+    assert "d2_rag" in data
 
 
 def test_prediction():

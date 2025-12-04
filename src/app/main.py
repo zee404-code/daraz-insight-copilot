@@ -1,12 +1,34 @@
 import joblib
 import pandas as pd
 import json
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import numpy as np
 import os
 from .instrumentation import setup_instrumentation, observe_prediction
+from typing import List
 
+from dotenv import load_dotenv
+
+# Force reload from the current directory
+load_dotenv()
+
+key = os.getenv("GROQ_API_KEY")
+print(f"DEBUG: API Key Loaded? {key is not None}")
+if key:
+    print(f"DEBUG: Key starts with: {key[:5]}...")
+else:
+    print("DEBUG: ❌ Key is missing!")
+
+# D2 RAG Import (safe)
+try:
+    from src.rag.query import ask_rag
+
+    RAG_READY = True
+    print("RAG system loaded successfully!")
+except ImportError as e:
+    print(f"RAG not ready: {e} — Run 'make rag' first")
+    RAG_READY = False
 
 # Initialize API and Load Artifacts ---
 app = FastAPI(title="Daraz Product Success Predictor")
@@ -71,16 +93,39 @@ class PredictionOut(BaseModel):
     predicted_success_score: float
 
 
+# D2 RAG Schema
+class AskQuery(BaseModel):
+    question: str
+
+
+class RAGResponse(BaseModel):
+    answer: str
+    sources: List[str]
+    latency_seconds: float
+
+
 # Create API Endpoints ---
 @app.get("/")
 def home():
-    return {"message": "API is running. Go to /docs to see the endpoints."}
+    return {
+        "message": "Daraz Insight Copilot — Milestone 2 Complete",
+        "endpoints": {
+            "D1": "POST /predict → Product Success Score",
+            "D2": "POST /ask → RAG Chatbot with Real Daraz Reviews",
+            "Health": "GET /health",
+        },
+    }
 
 
 # Health check endpoint (required by your instructor)
 @app.get("/health")
 def health():
-    return {"status": "ok", "canary": os.getenv("CANARY", "false")}
+    return {
+        "status": "ok",
+        "canary": os.getenv("CANARY", "false"),
+        "d1_model": model is not None,
+        "d2_rag": RAG_READY,
+    }
 
 
 # Prediction endpoint
@@ -115,3 +160,25 @@ def predict(features: ProductFeatures):
 
     # Return the result
     return {"predicted_success_score": float(prediction)}
+
+
+# D2 RAG Chatbot Endpoint
+@app.post("/ask", response_model=RAGResponse)
+def ask(query: AskQuery):
+    question = query.question.strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+    # Simple Guardrails
+    blocked = ["fuck", "shit", "cnic", "password", "card"]
+    if any(word in question.lower() for word in blocked):
+        raise HTTPException(status_code=400, detail="Inappropriate content blocked")
+
+    if not RAG_READY:
+        raise HTTPException(status_code=503, detail="RAG not ready — run: make rag")
+
+    try:
+        result = ask_rag(question)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"RAG error: {str(e)}")

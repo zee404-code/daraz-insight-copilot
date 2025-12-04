@@ -1,7 +1,7 @@
 repos:
 # Required Hooks ---
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -17,13 +17,13 @@ repos:
 
 # Linting & Formatting Hooks ---
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.5
+    rev: v0.14.7
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
 -   repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 25.11.0
     hooks:
     -   id: black
