@@ -2,7 +2,7 @@ import joblib
 import pandas as pd
 import json
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import numpy as np
 import os
 from .instrumentation import setup_instrumentation, observe_prediction
@@ -71,21 +71,24 @@ class ProductFeatures(BaseModel):
     Flagship_Store: str
 
     # This is Pydantic's way to show an example in the /docs
-    class Config:
-        schema_extra = {
-            "example": {
-                "Original_Price": 1650,
-                "Discount_Price": 725,
-                "Number_of_Ratings": 31,
-                "Positive_Seller_Ratings": 86,
-                "Ship_On_Time": 0,
-                "Chat_Response_Rate": 93,
-                "No_of_products_to_be_sold": 113.79,
-                "Category": "Watches, Bags, Jewellery",
-                "Delivery_Type": "Free Delivery",
-                "Flagship_Store": "No",
-            }
+
+
+model_config = ConfigDict(
+    json_schema_extra={
+        "example": {
+            "Original_Price": 1650,
+            "Discount_Price": 725,
+            "Number_of_Ratings": 31,
+            "Positive_Seller_Ratings": 86,
+            "Ship_On_Time": 0,
+            "Chat_Response_Rate": 93,
+            "No_of_products_to_be_sold": 113.79,
+            "Category": "Watches, Bags, Jewellery",
+            "Delivery_Type": "Free Delivery",
+            "Flagship_Store": "No",
         }
+    }
+)
 
 
 # Define Output Data Shape ---
@@ -131,7 +134,8 @@ def health():
 # Prediction endpoint
 @app.post("/predict", response_model=PredictionOut)
 def predict(features: ProductFeatures):
-    data_dict = features.dict()
+    data_dict = features.model_dump()
+
     data_dict_renamed = {
         "Original Price": data_dict["Original_Price"],
         "Discount Price": data_dict["Discount_Price"],
