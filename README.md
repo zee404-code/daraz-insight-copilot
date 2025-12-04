@@ -206,7 +206,7 @@ graph TD
     D --> E[Embedding with all-MiniLM-L6-v2]
     E --> F[FAISS Index]
     F --> G[Persist to ./faiss_index]
-    H[User Question] --> I[/ask endpoint]
+    H[User Question] --> I[ask endpoint]
     I --> J[Load FAISS Index]
     J --> K[Retrieve Top-5]
     K --> L[Groq LLM]
