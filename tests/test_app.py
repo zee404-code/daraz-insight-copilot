@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from src.app.main import app  # Adjusted import path to match your structure
+from app.main import app  # Adjusted import path to match your structure
 
 client = TestClient(app)
 
