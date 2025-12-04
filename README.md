@@ -191,3 +191,51 @@ Answer 'Y' if prompted.
 
 **Q: Pre-commit hook fails?**
 **A:** Run pre-commit run --all-files locally. This will show you the errors and automatically fix many of them. Commit the changes made by the hooks.
+
+# D2 RAG Pipeline — Daraz Insight Copilot
+
+**Status**: Complete | **Vector Store**: FAISS | **Embedding**: all-MiniLM-L6-v2 | **LLM**: Groq Llama-3.1-8B
+
+### Architecture Diagram
+
+```mermaid
+graph TD
+    A[daraz-coded-mixed-product-reviews.csv] --> B[src/ingest.py]
+    B --> C[Document Loading + Metadata]
+    C --> D[Sentence Splitting]
+    D --> E[Embedding with all-MiniLM-L6-v2]
+    E --> F[FAISS Index]
+    F --> G[Persist to ./faiss_index]
+    H[User Question] --> I[/ask endpoint]
+    I --> J[Load FAISS Index]
+    J --> K[Retrieve Top-5]
+    K --> L[Groq LLM]
+    L --> M[Final Answer + Sources]
+```
+<br>
+<img src="assets/D2 S1.png" alt="testing cnic" width="500">
+
+## Guardrails & Safety Mechanisms (D3)
+
+We implemented a custom **Policy Engine** (`src/app/guardrails.py`) that intercepts requests at two stages to ensure system safety and compliance.
+
+### 1. Input Validation (Pre-RAG)
+Before the User Query reaches the RAG system, it is scanned using Regex and Keyword Matching. If a rule is triggered, the API returns a `400 Bad Request` immediately, saving RAG computational costs.
+
+* **PII Detection:** Blocks Pakistani CNIC patterns (`\d{5}-\d{7}-\d{1}`) and Phone numbers to protect sensitive data.
+  <br>
+  <img src="assets/D3 S1.png" alt="testing cnic" width="500">
+
+* **Prompt Injection:** Scans for adversarial phrases like "ignore previous instructions", "delete database", or "system prompt".
+  <br>
+  <img src="assets/D3 S2.png" alt="testing database" width="500">
+
+### 2. Output Moderation (Post-RAG)
+The LLM's generated answer is scanned before being sent back to the user.
+
+* **Toxicity Filter:** Checks against a ban-list of toxic/inappropriate terms.
+* **Hallucination/Quality Check:** Flags responses that are unusually short or empty.
+* **Action:** If triggered, the answer is replaced with a standard safety message ("I cannot answer this due to safety guidelines").
+
+### 3. Observability
+All events are logged to Prometheus using a custom counter `guardrail_events_total`, labeled by trigger type (`input_validation`, `output_moderation`).

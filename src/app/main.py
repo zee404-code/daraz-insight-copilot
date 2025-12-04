@@ -1,3 +1,4 @@
+# src/app/main.py
 import joblib
 import pandas as pd
 import json
@@ -5,20 +6,22 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 import numpy as np
 import os
-from .instrumentation import setup_instrumentation, observe_prediction
 from typing import List
-
 from dotenv import load_dotenv
+
+# NEW Imports for Deliverable 3
+from .instrumentation import (
+    setup_instrumentation,
+    observe_prediction,
+    log_guardrail_event,
+)
+from .guardrails import CustomGuardrails
 
 # Force reload from the current directory
 load_dotenv()
 
 key = os.getenv("GROQ_API_KEY")
 print(f"DEBUG: API Key Loaded? {key is not None}")
-if key:
-    print(f"DEBUG: Key starts with: {key[:5]}...")
-else:
-    print("DEBUG: ❌ Key is missing!")
 
 # D2 RAG Import (safe)
 try:
@@ -36,13 +39,16 @@ app = FastAPI(title="Daraz Product Success Predictor")
 # Setup instrumentation
 setup_instrumentation(app)
 
+# Initialize Guardrails Engine (New)
+guardrails = CustomGuardrails()
+
 # Load the trained model.
 try:
     model = joblib.load("models/model.joblib")
     print("Model loaded successfully.")
 except FileNotFoundError:
-    print("Error: model.joblib not found. Make sure it's in the 'models' folder.")
-    model = None  # Set model to None to handle error gracefully
+    print("Error: model.joblib not found.")
+    model = None
 
 # Load the list of model columns (features)
 try:
@@ -50,8 +56,8 @@ try:
         model_columns = json.load(f)
     print("Model columns loaded successfully.")
 except FileNotFoundError:
-    print("Error: model_columns.json not found. Run train.py to create it.")
-    model_columns = []  # Set to empty list
+    print("Error: model_columns.json not found.")
+    model_columns = []
 
 
 # Define Input Data Shape (Pydantic BaseModel) ---
@@ -70,25 +76,23 @@ class ProductFeatures(BaseModel):
     Delivery_Type: str
     Flagship_Store: str
 
-    # This is Pydantic's way to show an example in the /docs
-
-
-model_config = ConfigDict(
-    json_schema_extra={
-        "example": {
-            "Original_Price": 1650,
-            "Discount_Price": 725,
-            "Number_of_Ratings": 31,
-            "Positive_Seller_Ratings": 86,
-            "Ship_On_Time": 0,
-            "Chat_Response_Rate": 93,
-            "No_of_products_to_be_sold": 113.79,
-            "Category": "Watches, Bags, Jewellery",
-            "Delivery_Type": "Free Delivery",
-            "Flagship_Store": "No",
+    # FIX: ConfigDict is now correctly indented inside the class
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "Original_Price": 1650,
+                "Discount_Price": 725,
+                "Number_of_Ratings": 31,
+                "Positive_Seller_Ratings": 86,
+                "Ship_On_Time": 0,
+                "Chat_Response_Rate": 93,
+                "No_of_products_to_be_sold": 113.79,
+                "Category": "Watches, Bags, Jewellery",
+                "Delivery_Type": "Free Delivery",
+                "Flagship_Store": "No",
+            }
         }
-    }
-)
+    )
 
 
 # Define Output Data Shape ---
@@ -111,16 +115,15 @@ class RAGResponse(BaseModel):
 @app.get("/")
 def home():
     return {
-        "message": "Daraz Insight Copilot — Milestone 2 Complete",
+        "message": "Daraz Insight Copilot — Milestone 3 Complete",
         "endpoints": {
             "D1": "POST /predict → Product Success Score",
-            "D2": "POST /ask → RAG Chatbot with Real Daraz Reviews",
+            "D2": "POST /ask → RAG Chatbot with Guardrails",
             "Health": "GET /health",
         },
     }
 
 
-# Health check endpoint (required by your instructor)
 @app.get("/health")
 def health():
     return {
@@ -131,11 +134,9 @@ def health():
     }
 
 
-# Prediction endpoint
 @app.post("/predict", response_model=PredictionOut)
 def predict(features: ProductFeatures):
     data_dict = features.model_dump()
-
     data_dict_renamed = {
         "Original Price": data_dict["Original_Price"],
         "Discount Price": data_dict["Discount_Price"],
@@ -149,40 +150,48 @@ def predict(features: ProductFeatures):
         "Flagship Store": data_dict["Flagship_Store"],
     }
     input_df = pd.DataFrame([data_dict_renamed])
-
-    # Apply One-Hot Encoding
     input_df_encoded = pd.get_dummies(input_df, drop_first=True)
-
-    # Align Columns with the Training Data
     input_df_aligned = input_df_encoded.reindex(columns=model_columns, fill_value=0)
 
     if model is None or not model_columns:
-        return {"error": "Model or columns not loaded. Check server logs."}
+        return {"error": "Model or columns not loaded."}
 
     prediction = np.clip(model.predict(input_df_aligned)[0], 1, 100)
     observe_prediction()
 
-    # Return the result
     return {"predicted_success_score": float(prediction)}
 
 
-# D2 RAG Chatbot Endpoint
+# D2 RAG Chatbot Endpoint (Updated with Guardrails)
 @app.post("/ask", response_model=RAGResponse)
 def ask(query: AskQuery):
     question = query.question.strip()
-    if not question:
-        raise HTTPException(status_code=400, detail="Question cannot be empty")
 
-    # Simple Guardrails
-    blocked = ["fuck", "shit", "cnic", "password", "card"]
-    if any(word in question.lower() for word in blocked):
-        raise HTTPException(status_code=400, detail="Inappropriate content blocked")
+    # --- GUARDRAIL 1: INPUT VALIDATION ---
+    # We check PII and Injection before touching the RAG system
+    is_safe, reason = guardrails.check_input(question)
+    if not is_safe:
+        log_guardrail_event("input_validation", "blocked")
+        print(f"GUARDRAIL ALERT: {reason}")
+        raise HTTPException(status_code=400, detail=f"Request blocked: {reason}")
 
     if not RAG_READY:
         raise HTTPException(status_code=503, detail="RAG not ready — run: make rag")
 
     try:
+        # Get answer from RAG
         result = ask_rag(question)
+
+        # --- GUARDRAIL 2: OUTPUT MODERATION ---
+        # We check the 'answer' field of the result
+        is_safe_out, reason_out = guardrails.check_output(result["answer"])
+        if not is_safe_out:
+            log_guardrail_event("output_moderation", "blocked")
+            print(f"GUARDRAIL ALERT: {reason_out}")
+            # We override the answer but keep the sources so the user knows we tried
+            result["answer"] = "I cannot answer this due to safety guidelines."
+
         return result
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"RAG error: {str(e)}")

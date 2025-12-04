@@ -5,7 +5,14 @@ from prometheus_client import Counter
 PREDICTIONS_COUNTER = Counter(
     "api_predictions_total",
     "Total number of predictions made",
-    labelnames=("model_version",),  # You can add labels like model version
+    labelnames=("model_version",),
+)
+
+# NEW: Guardrail Counter for Deliverable 3
+GUARDRAIL_COUNTER = Counter(
+    "guardrail_events_total",
+    "Total number of guardrail triggers",
+    ["type", "action"],  # Labels: type (input/output), action (blocked/flagged)
 )
 
 
@@ -13,25 +20,25 @@ PREDICTIONS_COUNTER = Counter(
 def setup_instrumentation(app):
     """
     Sets up the standard Prometheus instrumentation.
-    This creates default metrics like /metrics, request latency, etc.
     """
     print("Setting up Prometheus instrumentation...")
     instrumentator = Instrumentator(
         excluded_handlers=["/metrics"],
     )
-
-    # Add the standard instrumentation to the app
     instrumentator.instrument(app)
     instrumentator.expose(app)
-
     print("Instrumentation setup complete.")
 
 
-# --- Helper function to be called from main.py ---
+# --- Helper functions ---
 def observe_prediction():
-    """
-    Call this function from your /predict endpoint
-    to increment the prediction counter.
-    """
-    # We'll just hardcode the model version for now
+    """Increment prediction counter."""
     PREDICTIONS_COUNTER.labels(model_version="v1.0").inc()
+
+
+def log_guardrail_event(event_type: str, action: str):
+    """
+    Logs a guardrail event to Prometheus.
+    Usage: log_guardrail_event("input_validation", "blocked")
+    """
+    GUARDRAIL_COUNTER.labels(type=event_type, action=action).inc()
