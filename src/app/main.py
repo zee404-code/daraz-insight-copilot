@@ -24,6 +24,7 @@ key = os.getenv("GROQ_API_KEY")
 print(f"DEBUG: API Key Loaded? {key is not None}")
 
 # D2 RAG Import (safe)
+# D2 RAG Import (safe)
 try:
     from src.rag.query import ask_rag
 
@@ -32,6 +33,11 @@ try:
 except ImportError as e:
     print(f"RAG not ready: {e} — Run 'make rag' first")
     RAG_READY = False
+
+    # FIX: Define a dummy function so tests don't crash with AttributeError
+    def ask_rag(query):
+        return {"answer": "RAG is unavailable", "sources": [], "latency_seconds": 0.0}
+
 
 # Initialize API and Load Artifacts ---
 app = FastAPI(title="Daraz Product Success Predictor")
@@ -167,8 +173,11 @@ def predict(features: ProductFeatures):
 def ask(query: AskQuery):
     question = query.question.strip()
 
+    # FIX 1: Add the empty check back
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+
     # --- GUARDRAIL 1: INPUT VALIDATION ---
-    # We check PII and Injection before touching the RAG system
     is_safe, reason = guardrails.check_input(question)
     if not is_safe:
         log_guardrail_event("input_validation", "blocked")
@@ -183,12 +192,10 @@ def ask(query: AskQuery):
         result = ask_rag(question)
 
         # --- GUARDRAIL 2: OUTPUT MODERATION ---
-        # We check the 'answer' field of the result
         is_safe_out, reason_out = guardrails.check_output(result["answer"])
         if not is_safe_out:
             log_guardrail_event("output_moderation", "blocked")
             print(f"GUARDRAIL ALERT: {reason_out}")
-            # We override the answer but keep the sources so the user knows we tried
             result["answer"] = "I cannot answer this due to safety guidelines."
 
         return result
