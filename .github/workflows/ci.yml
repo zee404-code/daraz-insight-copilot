@@ -1,5 +1,5 @@
 # This is the name of your workflow
-name: MLOps Milestone 1 CI
+name: MLOps Milestone 2 CI
 
 on:
   push:
