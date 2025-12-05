@@ -23,6 +23,7 @@ llama-index-core
 llama-index-vector-stores-faiss
 llama-index-embeddings-huggingface
 llama-index-embeddings-openai
+llama_index.llms.groq
 faiss-cpu
 groq
 rouge-score

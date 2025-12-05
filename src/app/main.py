@@ -9,11 +9,12 @@ import os
 from typing import List
 from dotenv import load_dotenv
 
-# NEW Imports for Deliverable 3
+import time  # Add this import
 from .instrumentation import (
     setup_instrumentation,
     observe_prediction,
     log_guardrail_event,
+    log_llm_metrics,  # Import the new logger
 )
 from .guardrails import CustomGuardrails
 
@@ -171,9 +172,9 @@ def predict(features: ProductFeatures):
 # D2 RAG Chatbot Endpoint (Updated with Guardrails)
 @app.post("/ask", response_model=RAGResponse)
 def ask(query: AskQuery):
-    question = query.question.strip()
+    start_time = time.time()  # Start Timer
 
-    # FIX 1: Add the empty check back
+    question = query.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
@@ -190,6 +191,18 @@ def ask(query: AskQuery):
     try:
         # Get answer from RAG
         result = ask_rag(question)
+
+        # --- METRICS CALCULATION (D4) ---
+        latency = time.time() - start_time
+
+        # Simple heuristic: 1 token ~= 4 chars (since we don't want to install tiktoken dependency issues)
+        input_chars = len(question)
+        output_chars = len(result["answer"])
+        input_tokens = max(1, int(input_chars / 4))
+        output_tokens = max(1, int(output_chars / 4))
+
+        log_llm_metrics(latency, input_tokens, output_tokens)
+        # -------------------------------
 
         # --- GUARDRAIL 2: OUTPUT MODERATION ---
         is_safe_out, reason_out = guardrails.check_output(result["answer"])

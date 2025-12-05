@@ -3,6 +3,7 @@
 faiss_index/
 mlruns/
 mlartifacts/
+my_model/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -112,6 +112,41 @@ A full Prometheus & Grafana stack is included in the Docker Compose file.
 
 * **GPU Metrics:** This project utilizes CPU for training and inference, so GPU-specific metrics are not applicable.
 
+### LLM Evaluation
+
+We monitor the RAG pipeline using a dedicated Grafana dashboard powered by Prometheus metrics.
+
+* **Token Usage:** Tracks `llm_token_usage_total` (Input vs Output) to monitor usage volume.
+* **Cost Estimation:** Tracks `llm_cost_total` based on a calculated rate per 1k tokens.
+* **RAG Latency:** A Histogram (`rag_request_latency_seconds`) visualizing the response time distribution.
+* **Safety Violations:** Tracks `guardrail_events_total` to see how often PII or Injection attacks are attempted.
+
+*To view this dashboard:*
+1.  Run `docker-compose up`
+2.  Go to `http://localhost:3000`
+3.  Import the JSON dashboard located in `config/grafana_dashboard.json` (if provided) or build a panel using the metrics above.
+
+## LLM Monitoring
+
+We employ a dual-stack monitoring approach to ensure the reliability of both the Generative (LLM) and Predictive (ML) components.
+
+### 1. Real-time Metrics (Grafana + Prometheus)
+We track operational metrics for the RAG pipeline using a Grafana dashboard.
+* **Token Usage & Cost:** Tracks `llm_token_usage_total` to estimate API costs ($0.50/1M input, $1.50/1M output).
+* **RAG Latency:** Monitors the P95 and P99 latency of the `/ask` endpoint to ensure responsiveness.
+* **Safety Violations:** Logs `guardrail_events_total` to track attempted attacks (Injection/PII).
+<img src="assets/D4 S1.png" alt="http request total" width="500">
+<img src="assets/D4 S2.png" alt="llm token usage total" width="500">
+<img src="assets/D4 S3.png" alt="guardrail events total" width="500">
+<img src="assets/D4 S4.png" alt="Grafana Dashboard" width="500">
+
+### 2. Data Drift Monitoring (Evidently)
+We monitor the integrity of our retrieval corpus and tabular data using **Evidently AI**.
+* **Retrieval Corpus Drift:** Detects semantic shifts in the product descriptions that could degrade RAG performance.
+* **Feature Drift:** specific checks on key features like `Original_Price` and `Ratings`.
+
+<img src="assets/D4 S5.png" alt="Evidently Drift Report" width="500">
+
 ## Cloud Deployment
 
 This project is deployed and hosted on **Amazon Web Services (AWS)** using three distinct services: **EC2**, **S3**, and **CloudWatch**, fulfilling the D9 requirement.
@@ -192,7 +227,7 @@ Answer 'Y' if prompted.
 **Q: Pre-commit hook fails?**
 **A:** Run pre-commit run --all-files locally. This will show you the errors and automatically fix many of them. Commit the changes made by the hooks.
 
-# D2 RAG Pipeline — Daraz Insight Copilot
+# RAG Pipeline — Daraz Insight Copilot
 
 **Status**: Complete | **Vector Store**: FAISS | **Embedding**: all-MiniLM-L6-v2 | **LLM**: Groq Llama-3.1-8B
 
@@ -206,7 +241,7 @@ graph TD
     D --> E[Embedding with all-MiniLM-L6-v2]
     E --> F[FAISS Index]
     F --> G[Persist to ./faiss_index]
-    H[User Question] --> I[/ask endpoint]
+    H[User Question] --> I[ask endpoint]
     I --> J[Load FAISS Index]
     J --> K[Retrieve Top-5]
     K --> L[Groq LLM]

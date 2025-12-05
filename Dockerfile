@@ -14,6 +14,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.11-slim AS final
 
 WORKDIR /app
+
+# FIX: Install curl here so the HEALTHCHECK works
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m -u 1000 app
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
@@ -26,6 +32,7 @@ RUN chown -R app:app /app
 
 USER app
 
+# Now this will work because curl is installed
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl --fail http://localhost:8000/health || exit 1
 

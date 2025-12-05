@@ -8,44 +8,48 @@ services:
   # FastAPI Application
   app:
     build: .
+    container_name: daraz-app
     ports:
       - "8000:8000"
+    user: "root"
     volumes:
-      - ./reports:/app/reports
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./faiss_index:/app/faiss_index
+      - ./my_model:/app/my_model
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - EMBED_MODEL_PATH=/app/my_model
+      - HF_HUB_OFFLINE=1
+      - TRANSFORMERS_OFFLINE=1
     networks:
       - monitoring-net
 
-  # Nginx Dashboard
-  dashboard:
-    image: nginx:alpine
-    ports:
-      - "7000:80"
-    volumes:
-      - ./reports:/usr/share/nginx/html:ro
-    networks:
-      - monitoring-net
-
-  # Prometheus Service
+  # Prometheus Service (REQUIRED CONFIG)
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
+      # You still need this file!
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     networks:
       - monitoring-net
 
-  # Grafana Service
+  # Grafana Service (MANUAL CONFIG)
   grafana:
     image: grafana/grafana-oss:latest
     container_name: grafana
     ports:
       - "3000:3000"
-    volumes:
-      - ./monitoring/grafana/provisioning/datasource/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+    # I removed the 'volumes' block here.
+    # Now it starts fresh, and you set it up in the browser.
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

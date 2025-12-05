@@ -248,7 +248,9 @@ llama-index-core==0.14.9
     #   llama-index-embeddings-huggingface
     #   llama-index-embeddings-openai
     #   llama-index-indices-managed-llama-cloud
+    #   llama-index-llms-groq
     #   llama-index-llms-openai
+    #   llama-index-llms-openai-like
     #   llama-index-readers-file
     #   llama-index-readers-llama-parse
     #   llama-index-vector-stores-faiss
@@ -263,10 +265,15 @@ llama-index-indices-managed-llama-cloud==0.9.4
     # via llama-index
 llama-index-instrumentation==0.4.2
     # via llama-index-workflows
+llama-index-llms-groq==0.4.1
+    # via -r requirements.in
 llama-index-llms-openai==0.6.10
     # via
     #   llama-index
     #   llama-index-cli
+    #   llama-index-llms-openai-like
+llama-index-llms-openai-like==0.5.3
+    # via llama-index-llms-groq
 llama-index-readers-file==0.5.5
     # via llama-index
 llama-index-readers-llama-parse==0.5.1
@@ -642,7 +649,9 @@ tqdm==4.67.1
     #   sentence-transformers
     #   transformers
 transformers==4.57.3
-    # via sentence-transformers
+    # via
+    #   llama-index-llms-openai-like
+    #   sentence-transformers
 triton==3.5.1 ; platform_machine == 'x86_64' and sys_platform == 'linux'
     # via torch
 typer==0.20.0
