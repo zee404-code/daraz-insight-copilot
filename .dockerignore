@@ -1,0 +1,26 @@
+Ignore Git history
+
+.git
+.gitignore
+
+Ignore Python cache and environments
+
+pycache
+*.pyc
+.venv
+venv
+env
+
+Ignore large data and model files
+
+data/
+models/
+my_model/
+*.pkl
+*.h5
+*.zip
+*.csv
+
+Ignore local configs
+
+.env
