@@ -1,0 +1,17 @@
+[
+  {
+    "question": "What is the return policy for a defective watch?",
+    "expected_keywords": ["return", "policy", "days", "refund"],
+    "min_length": 10
+  },
+  {
+    "question": "How do I track my order?",
+    "expected_keywords": ["track", "order", "shipping", "app"],
+    "min_length": 5
+  },
+  {
+    "question": "Do you offer free delivery?",
+    "expected_keywords": ["free", "delivery", "shipping", "above"],
+    "min_length": 5
+  }
+]
