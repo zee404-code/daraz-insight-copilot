@@ -447,3 +447,8 @@ Answer 'Y' if prompted.
 
 **Q: Pre-commit hook fails?**
 **A:** Run pre-commit run --all-files locally. This will show you the errors and automatically fix many of them. Commit the changes made by the hooks.
+
+# Frontend
+<img src="assets/frontend.png" alt="frontend" width="400">
+<br>
+<img src="assets/frontend2.png" alt="frontend" width="400">

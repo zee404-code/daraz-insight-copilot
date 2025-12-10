@@ -5,7 +5,6 @@ import requests
 from streamlit_chat import message
 from typing import Dict, Any
 
-
 # ← Move imports to module level (critical for patching!)
 # requests is now available as app.frontend.requests
 
@@ -14,6 +13,7 @@ def make_prediction(payload: Dict[str, Any]) -> str:
     """Helper to call prediction endpoint"""
     try:
         response = requests.post("http://localhost:8000/predict", json=payload)
+
         if response.status_code == 200:
             score = response.json()["predicted_success_score"]
             return f"Predicted Success Score: {score:.2f}"
@@ -29,6 +29,7 @@ def ask_question(question: str) -> str:
         response = requests.post(
             "http://localhost:8000/ask", json={"question": question}
         )
+
         if response.status_code == 200:
             return response.json()["answer"]
         else:
@@ -58,6 +59,18 @@ def main():
             # ... all your inputs ...
             Original_Price = st.number_input("Original Price", value=1650)
             Discount_Price = st.number_input("Discount Price", value=725)
+            Number_of_Ratings = st.number_input("Number of Ratings", value=31)
+            Positive_Seller_Ratings = st.number_input(
+                "Positive Seller Ratings", value=86
+            )
+            Ship_On_Time = st.number_input("Ship On Time", value=0)
+            Chat_Response_Rate = st.number_input("Chat Response Rate", value=93)
+            No_of_products_to_be_sold = st.number_input(
+                "No. of products to be sold", value=113.79
+            )
+            Category = st.text_input("Category", value="Watches, Bags, Jewellery")
+            Delivery_Type = st.text_input("Delivery Type", value="Free Delivery")
+            Flagship_Store = st.text_input("Flagship Store", value="No")
             # ... etc ...
 
             submitted = st.form_submit_button("Predict Success Score")
@@ -66,7 +79,14 @@ def main():
                 payload = {
                     "Original_Price": Original_Price,
                     "Discount_Price": Discount_Price,
-                    # ... include all fields ...
+                    "Number_of_Ratings": Number_of_Ratings,
+                    "Positive_Seller_Ratings": Positive_Seller_Ratings,
+                    "Ship_On_Time": Ship_On_Time,
+                    "Chat_Response_Rate": Chat_Response_Rate,
+                    "No_of_products_to_be_sold": No_of_products_to_be_sold,
+                    "Category": Category,
+                    "Delivery_Type": Delivery_Type,
+                    "Flagship_Store": Flagship_Store,
                 }
                 result = make_prediction(payload)
                 if "Success Score" in result:
