@@ -109,6 +109,16 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:frontend-latest
+            ghcr.io/${{ github.repository }}:frontend-${{ github.sha }}
+
   # ------------------------
   # Canary Deploy + Acceptance Tests
   # ------------------------
