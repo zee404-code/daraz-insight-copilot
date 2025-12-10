@@ -4,7 +4,6 @@ import pandas as pd
 import json
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
-import numpy as np
 import os
 from typing import List
 from dotenv import load_dotenv
@@ -65,6 +64,14 @@ try:
 except FileNotFoundError:
     print("Error: model_columns.json not found.")
     model_columns = []
+
+# Load scaler
+try:
+    scaler = joblib.load("models/scaler.joblib")
+    print("Scaler loaded successfully.")
+except FileNotFoundError:
+    print("Error: scaler.joblib not found.")
+    scaler = None
 
 
 # Define Input Data Shape (Pydantic BaseModel) ---
@@ -143,7 +150,15 @@ def health():
 
 @app.post("/predict", response_model=PredictionOut)
 def predict(features: ProductFeatures):
+    if model is None or not model_columns or scaler is None:
+        raise HTTPException(
+            status_code=500, detail="Model, columns, or scaler not loaded."
+        )
+
+    # Convert Pydantic object → dict
     data_dict = features.model_dump()
+
+    # Rename to match training columns
     data_dict_renamed = {
         "Original Price": data_dict["Original_Price"],
         "Discount Price": data_dict["Discount_Price"],
@@ -156,17 +171,38 @@ def predict(features: ProductFeatures):
         "Delivery Type": data_dict["Delivery_Type"],
         "Flagship Store": data_dict["Flagship_Store"],
     }
+
+    # Make a DataFrame
     input_df = pd.DataFrame([data_dict_renamed])
+
+    # --- SCALE NUMERIC FEATURES (NEW) ---
+    numeric_features = [
+        "Original Price",
+        "Discount Price",
+        "Number of Ratings",
+        "Positive Seller Ratings",
+        "Ship On Time",
+        "Chat Response Rate",
+        "No. of products to be sold",
+    ]
+
+    input_df[numeric_features] = scaler.transform(input_df[numeric_features])
+
+    # --- ENCODE CATEGORICALS ---
     input_df_encoded = pd.get_dummies(input_df, drop_first=True)
+
+    # --- ALIGN COLUMNS ---
     input_df_aligned = input_df_encoded.reindex(columns=model_columns, fill_value=0)
 
-    if model is None or not model_columns:
-        return {"error": "Model or columns not loaded."}
+    # --- PREDICT ---
+    raw_pred = model.predict(input_df_aligned)[0]
 
-    prediction = np.clip(model.predict(input_df_aligned)[0], 1, 100)
-    observe_prediction()
+    # Clip output to between 1–100
+    prediction = float(raw_pred)
 
-    return {"predicted_success_score": float(prediction)}
+    observe_prediction()  # D4 metric
+
+    return {"predicted_success_score": prediction}
 
 
 # D2 RAG Chatbot Endpoint (Updated with Guardrails)

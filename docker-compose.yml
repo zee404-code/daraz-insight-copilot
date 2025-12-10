@@ -16,15 +16,15 @@ services:
       - ./src:/app/src
       - ./models:/app/models
       - ./faiss_index:/app/faiss_index
-      - ./my_model:/app/my_model
     dns:
       - 8.8.8.8
       - 8.8.4.4
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY}
-      - EMBED_MODEL_PATH=/app/my_model
-      - HF_HUB_OFFLINE=1
-      - TRANSFORMERS_OFFLINE=1
+      - HF_HOME=./models/hf_cache
+      - EMBED_MODEL_PATH=sentence-transformers/all-MiniLM-L6-v2
+      - HF_HUB_OFFLINE=0
+      - TRANSFORMERS_OFFLINE=0
     networks:
       - monitoring-net
 
