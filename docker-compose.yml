@@ -28,6 +28,21 @@ services:
     networks:
       - monitoring-net
 
+    # Streamlit Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: daraz-frontend
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src/app/frontend.py:/app/frontend.py
+    environment:
+      - FASTAPI_URL=http://app:8000  # This is important for your frontend to call FastAPI
+    networks:
+      - monitoring-net
+
   # Prometheus Service (REQUIRED CONFIG)
   prometheus:
     image: prom/prometheus:latest

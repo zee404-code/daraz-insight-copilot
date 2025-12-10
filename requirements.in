@@ -16,7 +16,9 @@ prometheus-fastapi-instrumentator
 prometheus_client
 fsspec
 tqdm
-
+streamlit
+requests
+streamlit-chat
 # --- LLM & AI ---
 llama-index
 llama-index-core
