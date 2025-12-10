@@ -4,9 +4,9 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements_frontend.txt .
+RUN pip install --no-cache-dir -r requirements_frontend.txt
+
 
 # Copy frontend code
 COPY src/app/frontend.py /app/frontend.py
