@@ -8,11 +8,15 @@ from typing import Dict, Any
 # ← Move imports to module level (critical for patching!)
 # requests is now available as app.frontend.requests
 
+import os
+
+FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:8000")
+
 
 def make_prediction(payload: Dict[str, Any]) -> str:
     """Helper to call prediction endpoint"""
     try:
-        response = requests.post("http://localhost:8000/predict", json=payload)
+        response = requests.post(f"{FASTAPI_URL}/predict", json=payload)
 
         if response.status_code == 200:
             score = response.json()["predicted_success_score"]
@@ -27,7 +31,7 @@ def ask_question(question: str) -> str:
     """Helper to call RAG endpoint"""
     try:
         response = requests.post(
-            "http://localhost:8000/ask", json={"question": question}
+            response=requests.post(f"{FASTAPI_URL}/ask", json={"question": question})
         )
 
         if response.status_code == 200:
@@ -110,13 +114,11 @@ def main():
                 answer = ask_question(user_input)
                 st.session_state.messages.append({"role": "bot", "content": answer})
 
-        for msg in st.session_state.messages:
+        for i, msg in enumerate(st.session_state.messages):
             if msg["role"] == "user":
-                message(
-                    msg["content"], is_user=True, key=str(hash(msg["content"] + "user"))
-                )
+                message(msg["content"], is_user=True, key=f"user_{i}")
             else:
-                message(msg["content"], key=str(hash(msg["content"] + "bot")))
+                message(msg["content"], is_user=False, key=f"bot_{i}")
 
 
 if __name__ == "__main__":
