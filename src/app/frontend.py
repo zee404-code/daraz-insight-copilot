@@ -30,9 +30,7 @@ def make_prediction(payload: Dict[str, Any]) -> str:
 def ask_question(question: str) -> str:
     """Helper to call RAG endpoint"""
     try:
-        response = requests.post(
-            response=requests.post(f"{FASTAPI_URL}/ask", json={"question": question})
-        )
+        response = requests.post(f"{FASTAPI_URL}/ask", json={"question": question})
 
         if response.status_code == 200:
             return response.json()["answer"]
